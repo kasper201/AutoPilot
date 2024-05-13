@@ -5,11 +5,17 @@
 - Detect a face
 - Censor faces
 - Detect 2 signs
+- Filter out lines to only detect certain colour lines
 
 ## Installation
 OpenMV
 - myCam0.1 for face detection requires the censor image to be on the camera
 
+
+## Coloured line finder
+- Run findColouredLine on the Nicla
+- Adjust h value if needed
+- 
 ## FOMO model
 - Put the files from modelData in the Nicla.
 - Run FOMOmodelV1 on the Nicla.
