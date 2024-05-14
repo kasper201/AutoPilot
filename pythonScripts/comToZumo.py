@@ -14,7 +14,7 @@ from machine import Pin
 # define the communication pins to the zumo
 fromZumo = Pin("PA10", Pin.IN)
 toZumo = Pin("PA9", Pin.OUT_PP)
-toZumo = 1 # start with toZumo high
+toZumo.high() # start with toZumo high
 
 def converter(nr): # convert number to signal
     global toZumo # Declare toZumo again to make sure its using the global variable
@@ -22,26 +22,38 @@ def converter(nr): # convert number to signal
     if nr < 0:
            nr = ((-nr) ^ 0xFF) + 1  # Two's complement conversion
     waarde = nr & 0b111111111
-    #print(waarde)
+    print(waarde)
     i = 0
+    tmp = waarde
     while i < 9:
-        toZumo <<= waarde
+        print(f"{tmp:09b}")
+        print("gewoon doen", waarde)
+        tmp = tmp & 0b1
+        print(tmp)
+        if (tmp):
+            toZumo.high()
+        else:
+            toZumo.low()
         pyb.delay(5)
         i += 1
+        waarde = waarde >> 1
+        tmp = waarde
 
 # the sendToZumo function converts speed and turn to a signal for the zumo to pick up
 # speed is 100 to -100 and turn is 100 to -100
 def sendToZumo(speed, turn):
-    #print("sending to zumo")
+    print("sending to zumo")
     global toZumo
-    toZumo = 0 # set start bit
+    toZumo.low() # set start bit
     pyb.delay(5)
     converter(speed)
-    toZumo = 0 # set start bit
+    toZumo.high()
+    pyb.delay(50)
+    toZumo.low() # set start bit
     pyb.delay(5)
     converter(turn)
-    toZumo = 1
-
+    toZumo.high()
+    pyb.delay(50)
 
 sensor.reset()  # Reset and initialize the sensor.
 sensor.set_pixformat(sensor.RGB565)  # Set pixel format to RGB565 (or GRAYSCALE)
@@ -56,4 +68,6 @@ while True:
     clock.tick()  # Update the FPS clock.
     img = sensor.snapshot()  # Take a picture and return the image.
     print(clock.fps())  # Note: OpenMV Cam runs about half as fast when connected
-    sendToZumo(125, -10)
+    sendToZumo(-10, 10)
+    pyb.delay(10000)
+
