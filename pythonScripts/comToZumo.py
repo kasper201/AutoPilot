@@ -69,5 +69,4 @@ while True:
     img = sensor.snapshot()  # Take a picture and return the image.
     print(clock.fps())  # Note: OpenMV Cam runs about half as fast when connected
     sendToZumo(-10, 10)
-    pyb.delay(10000)
 
