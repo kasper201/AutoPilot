@@ -50,12 +50,12 @@ def sendToZumo(speed, turn):
     pyb.delay(5)
     converter(speed)
     toZumo.high()
-    pyb.delay(2000)
+    pyb.delay(100)
     toZumo.low() # set start bit
     pyb.delay(5)
     converter(turn)
     toZumo.high()
-    pyb.delay(2000)
+    pyb.delay(50)
 
 sensor.reset()  # Reset and initialize the sensor.
 sensor.set_pixformat(sensor.RGB565)  # Set pixel format to RGB565 (or GRAYSCALE)
