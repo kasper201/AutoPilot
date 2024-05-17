@@ -20,7 +20,7 @@ ENABLE_LENS_CORR = False  # turn on for straighter lines...
 
 sensor.reset()
 sensor.set_pixformat(sensor.RGB565)  # grayscale is faster
-sensor.set_framesize(sensor.HVGA)
+sensor.set_framesize(sensor.HQVGA)
 sensor.skip_frames(time=2000)
 clock = time.clock()
 
@@ -34,7 +34,8 @@ clock = time.clock()
 
 while True:
     clock.tick()
-    img = sensor.snapshot()
+    # Better horizontal line detection at the cost of having no more horizontal lines.
+    img = sensor.snapshot().rotation_corr(x_rotation=0.0, y_rotation=0.0, z_rotation=45.0)
     if ENABLE_LENS_CORR:
         img.lens_corr(1.8)  # for 2.8mm lens...
 
@@ -46,30 +47,21 @@ while True:
     # when lines are merged their magnitudes are added together. Note that `threshold`
     # filters out lines with low magnitudes before merging. To see the magnitude of
     # un-merged lines set `theta_margin` and `rho_margin` to 0...
-
     # `theta_margin` and `rho_margin` control merging similar lines. If two lines
     # theta and rho value differences are less than the margins then they are merged.
     img = img.to_grayscale()
     #img = img.binary([(0, 49)])
     img = img.binary([(18, 0)])
-    img.dilate(5)
+    #img.dilate(1)
 
     line_number = 1
     #for l in img.find_lines(threshold=4000, theta_margin=25, rho_margin=25):
-    for l in img.find_lines(threshold=400, theta_margin=25, rho_margin=25):
+    for l in img.find_lines(threshold=4000, theta_margin=25, rho_margin=25):
         #if (min_degree <= l.theta()) and (l.theta() <= max_degree):
         print("Line Number: {}, Theta: {}".format(line_number, l.theta()))
         line_number += 1
         img.draw_line(l.line(), color=(255, 0, 0))
             # print(l)
-
-    sensor.snapshot().replace(hmirror=False, vflip=True, transpose=True)
-
-    for l in img.find_lines(threshold=400, theta_margin=25, rho_margin=25):
-        #if (min_degree <= l.theta()) and (l.theta() <= max_degree):
-        print("Line Number: {}, Theta: {}".format(line_number, l.theta()))
-        line_number += 1
-        img.draw_line(l.line(), color=(255, 0, 0))
     #print("FPS %f" % clock.fps())
 
 # About negative rho values:
