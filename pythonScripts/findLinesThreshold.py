@@ -26,9 +26,8 @@ clock = time.clock()
 
 # All line objects have a `theta()` method to get their rotation angle in degrees.
 # You can filter lines based on their rotation angle.
-
-min_degree = 0
-max_degree = 179
+#min_degree = 0
+#max_degree = 179
 
 # All lines also have `x1()`, `y1()`, `x2()`, and `y2()` methods to get their end-points
 # and a `line()` method to get all the above as one 4 value tuple for `draw_line()`.
@@ -53,13 +52,25 @@ while True:
     img = img.to_grayscale()
     #img = img.binary([(0, 49)])
     img = img.binary([(18, 0)])
+    img.dilate(5)
 
-    for l in img.find_lines(threshold=4000, theta_margin=25, rho_margin=25):
-        if (min_degree <= l.theta()) and (l.theta() <= max_degree):
-            img.draw_line(l.line(), color=(255, 0, 0))
+    line_number = 1
+    #for l in img.find_lines(threshold=4000, theta_margin=25, rho_margin=25):
+    for l in img.find_lines(threshold=400, theta_margin=25, rho_margin=25):
+        #if (min_degree <= l.theta()) and (l.theta() <= max_degree):
+        print("Line Number: {}, Theta: {}".format(line_number, l.theta()))
+        line_number += 1
+        img.draw_line(l.line(), color=(255, 0, 0))
             # print(l)
 
-    print("FPS %f" % clock.fps())
+    sensor.snapshot().replace(hmirror=False, vflip=True, transpose=True)
+
+    for l in img.find_lines(threshold=400, theta_margin=25, rho_margin=25):
+        #if (min_degree <= l.theta()) and (l.theta() <= max_degree):
+        print("Line Number: {}, Theta: {}".format(line_number, l.theta()))
+        line_number += 1
+        img.draw_line(l.line(), color=(255, 0, 0))
+    #print("FPS %f" % clock.fps())
 
 # About negative rho values:
 #
