@@ -42,53 +42,81 @@ void setup()
   display.clear();
 }
 
-void readData()
-{
-  int speed = 0;
-  bool tmp;
-  if(digitalRead(fromNicla))
-  {
-    delay(3);
-    if(!digitalRead(fromNicla)) // if not matched, stop
-      return;
-    delay(2);
+unsigned int reverseBits(uint8_t num) {
+    unsigned int reversed = 0;
+    unsigned int bitCount = sizeof(num) * 8; // Get the total number of bits in the number
 
-    for(int i = 0; i <= 9; i++)
-    {
-      Serial.print("fromNicla value1: ");
-      Serial.println(digitalRead(fromNicla));
-
-      delay(2);
-      tmp = digitalRead(fromNicla);
-      Serial.print("fromNicla value2: ");
-      Serial.println(digitalRead(fromNicla));
-
-      delay(2);
-      Serial.print("fromNicla value3: ");
-      Serial.println(digitalRead(fromNicla));
-        if(tmp == digitalRead(fromNicla))
-        {
-          if(digitalRead(fromNicla)) 
-            1 >> speed;
-          else
-            0 >> speed;
+    for (unsigned int i = 0; i < bitCount; ++i) {
+        if (num & (1 << i)) {
+            reversed |= 1 << ((bitCount - 1) - i);
         }
-        else
-          Serial.println("OHNO");
-      delay(1);
     }
-    Serial.print("Entered value is: ");
-    Serial.println(speed);
+
+    return reversed;
+}
+
+void readData() {
+  unsigned int speed = 0;
+  bool lastValue;
+
+  //Serial.println("Reading data from Nicla...");
+
+  // Check for start bit (high-low transition)
+  if (!digitalRead(fromNicla)) {
+    delay(5);
+    if (digitalRead(fromNicla)) { // Ensure start bit is stable
+      Serial.println("Start bit detected");
+    } else {
+      //Serial.println("Error: Start bit not detected");
+      return;
+    }
+  } else {
+    //Serial.println("Error: Missing start bit");
+    return;
   }
+
+  // Read 8 data bits (LSB first)
+  for (int i = 0; i < 8; i++) {
+    delay(5);
+    lastValue = !digitalRead(fromNicla); // Read current pin state
+    Serial.print("Bit ");
+    Serial.print(i);
+    Serial.print(": ");
+    Serial.println(lastValue);
+
+    // Shift speed left and add current bit value (1 for high, 0 for low)
+    speed = (speed << 1) | lastValue;
+  }
+  
+  unsigned int MSB = reverseBits(speed);
+  int signedMSB;
+
+  
+  if (MSB > 128) {
+    signedMSB = -((~MSB + 1) & 0xFF); // Corrected to handle negative conversion properly
+  } else {
+    signedMSB = MSB;
+  }
+
+  if(signedMSB > 100)
+    signedMSB = signedMSB - 100;
+  else if(signedMSB < -100)
+    signedMSB = signedMSB + 100;
+
+  Serial.print("Received value (Converted to MSB first): ");
+  Serial.println(signedMSB);
+  display.clear();
+  display.print(signedMSB);
+  //delay(1000);
 }
 
 void loop()
 {
   ledYellow(1);
-  display.clear();
+  //display.clear();
   //display.print(F("2"));
   //display.gotoXY(i,1);
   //display.print(speed[i]);
   readData();
-  delay(1000);
+  //delay(1000);
 }
