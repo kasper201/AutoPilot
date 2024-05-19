@@ -29,7 +29,7 @@ void setup()
   pinMode(fromNicla, INPUT_PULLUP);
 
   display.clear();
-  display.print(F("test"));
+  display.print(F("Press B"));
 
   // Wait for the user to press button A.
   //buttonB.waitForButton();
@@ -45,16 +45,40 @@ void setup()
 
 int drive(int velocity, int yaw)
 {
-  int L, R, deltaV; 
-  static int lastYaw;
+  int L, R;
+  static int lastYaw = 0;
+  static int lastVelocity = 0;
 
-  deltaV = yaw / 2 + 3 * (yaw - lastYaw);
-  lastYaw = yaw;
+  // Proportional and Derivative gains for yaw and velocity
+  float Kp_yaw = 0.8; 
+  float Kd_yaw = 0.1;
+  float Kp_vel = 0.9;
+  float Kd_vel = 0.1; 
 
-  L = velocity + deltaV;
-  R = velocity - deltaV;
-  motors.setSpeeds(L, R);
+  // Smoothing factor 
+  float alpha = 0.3;
 
+  // Apply exponential moving average for smoothing
+  static float smoothedYaw = 0;
+  static float smoothedVelocity = 0;
+  
+  smoothedYaw = alpha * yaw + (1 - alpha) * smoothedYaw;
+  smoothedVelocity = alpha * velocity + (1 - alpha) * smoothedVelocity;
+
+  // Calculate delta for yaw and velocity
+  int deltaYaw = Kp_yaw * smoothedYaw + Kd_yaw * (smoothedYaw - lastYaw);
+  int deltaVelocity = Kp_vel * smoothedVelocity + Kd_vel * (smoothedVelocity - lastVelocity);
+
+  lastYaw = smoothedYaw;
+  lastVelocity = smoothedVelocity;
+
+  // dampen turn speed
+  deltaYaw = static_cast<int>(tanh(static_cast<float>(deltaYaw) / 130.0) * 100.0);
+
+  // Apply deltas to calculate motor speeds
+  L = 2.5 * (deltaVelocity + deltaYaw);
+  R = 2.5 * (deltaVelocity - deltaYaw);
+  motors.setSpeeds(L,R);
   display.clear();
   display.gotoXY(0,0);
   display.print(L);
@@ -62,6 +86,7 @@ int drive(int velocity, int yaw)
   display.print(R);
   return 0;
 }
+
 
 // reverses the inputs bits
 unsigned int reverseBits(uint8_t num) {
@@ -123,13 +148,12 @@ int readData() {
     signedMSB = MSB;
   }
 
-  if(signedMSB > 100) // correct the number to something more realistic. Possibly change this for a non blocking error.
-    signedMSB = signedMSB - 100;
-  else if(signedMSB < -100)
-    signedMSB = signedMSB + 100;
+  if(signedMSB > 100 || signedMSB < -100) // if the number is illegal give a non blocking error.
+    return -128;
 
   Serial.print("Received value (Converted to MSB first): ");
   Serial.println(signedMSB);
+  //Serial.println(millis());
   //display.clear();
   //display.print(signedMSB);
   return signedMSB;
@@ -137,32 +161,47 @@ int readData() {
 
 void loop()
 {
-  int i = 0;
+  int i = 0, j = 0;
   int dt = 0;
-  int yaw, velocity, e;
+  int yaw, velocity, e = 0;
+  unsigned long lastTime = 0;
   ledYellow(1);
   /*while(1)
   {
-    e = drive(100, 100);
+    e = drive(100, -31);
   }*/
+
   while(1)
   {
-    dt = millis();
-
     do
+    {
       i = readData();
+      dt = millis();
+    }
+    while(i == -128);
+    do
+    {
+      j = readData();
+    }
     while(i == -128);
 
-    if((millis()-dt) > 120) // if the delay is over 80 ms it must be the yaw
-      yaw = i;
-    else
-      velocity = i;   
+    unsigned long currentTime = millis();
+
+    if((currentTime - lastTime) > 100)
+    {
+      if(i != -128)
+        velocity = i;
+      if(j != -128)
+        yaw = j;
+    }
+
+    lastTime = currentTime;    
+    e = drive(velocity, yaw);  
     /*display.clear();
     display.gotoXY(0,0);
     display.print(velocity);
     display.gotoXY(0,1);
     display.print(yaw);*/
-    //e = drive(velocity, yaw);  
   }
   //delay(1000);
 }

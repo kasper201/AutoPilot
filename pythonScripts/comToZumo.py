@@ -49,13 +49,15 @@ def sendToZumo(speed, turn):
     toZumo.low() # set start bit
     pyb.delay(5)
     converter(speed)
+    pyb.delay(2)
     toZumo.high()
-    pyb.delay(100)
+    pyb.delay(5)
     toZumo.low() # set start bit
     pyb.delay(5)
     converter(turn)
+    pyb.delay(2)
     toZumo.high()
-    pyb.delay(50)
+    pyb.delay(100)
 
 sensor.reset()  # Reset and initialize the sensor.
 sensor.set_pixformat(sensor.RGB565)  # Set pixel format to RGB565 (or GRAYSCALE)
@@ -70,5 +72,5 @@ while True:
     clock.tick()  # Update the FPS clock.
     img = sensor.snapshot()  # Take a picture and return the image.
     print(clock.fps())  # Note: OpenMV Cam runs about half as fast when connected
-    sendToZumo(31, 6)
+    sendToZumo(100, 100)
 
