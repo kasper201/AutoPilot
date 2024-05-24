@@ -41,13 +41,35 @@ s.setblocking(True)
 # Function to handle commands from client
 def handle_client_command(client, data):
     """Handles commands sent from the client."""
-    command = data.decode('utf-8').strip()
-    if command == "HELLO":
-        client.sendall(b"HELLO FROM OPENMV\r\n")
-    elif command == "STATUS":
-        client.sendall(b"STATUS: OK\r\n")
+    command = None
+    try:
+        # Parse HTTP request to extract command parameter
+        request_lines = data.decode('utf-8').split('\r\n')
+        first_line = request_lines[0]
+        # Split the first line by spaces to isolate the command part
+        command_parts = first_line.split()
+        # Check if the first line contains the command
+        if len(command_parts) > 1 and command_parts[0] == "GET":
+            # Extract the command from the URL
+            url = command_parts[1]
+            command_index = url.find("command=")
+            if command_index != -1:
+                command = url[command_index + len("command="):]
+    except Exception as e:
+        print("Error parsing request:", e)
+
+    print(command)
+    if command:
+        if command == "HELLO":
+            print("check")
+            client.sendall(b"HELLO FROM OPENMV\r\n")
+        elif command == "STATUS":
+            client.sendall(b"STATUS: OK\r\n")
+        else:
+            client.sendall(b"UNKNOWN COMMAND\r\n")
     else:
-        client.sendall(b"UNKNOWN COMMAND\r\n")
+        client.sendall(b"INVALID REQUEST\r\n")
+
 
 # FPS clock
 clock = time.clock()
@@ -74,6 +96,7 @@ def start_streaming(client):
             try:
                 data = client.recv(1024)
                 if data:
+                    print("check2")
                     handle_client_command(client, data)
             except OSError as e:
                 if e.args[0] == 110:  # 110 is 'ETIMEDOUT'
@@ -92,6 +115,10 @@ while True:
     # set client socket timeout to 5s
     client.settimeout(5.0)
     print("Connected to " + addr[0] + ":" + str(addr[1]))
+
+    # Send initial response to indicate connection established
+    time.sleep(1)
+    client.sendall(b"HTTP/1.1 200 OK\r\n\r\nConnected to server\r\n")
 
     # Send multipart header for image streaming
     client.sendall(
