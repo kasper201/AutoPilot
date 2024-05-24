@@ -3,7 +3,7 @@ import time
 import network
 import socket
 
-SSID = "STM32"  # Network SSID
+SSID = "Nicla"  # Network SSID
 KEY = "Weerstation"  # Network key
 HOST = ""  # Use first available interface
 PORT = 8080  # Arbitrary non-privileged port
