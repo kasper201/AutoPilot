@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nicla Command Interface</title>
+</head>
+<body>
+    <h1>Nicla Command Interface</h1>
+    <button onclick="sendCommand('HELLO')">Send HELLO Command</button>
+    <pre id="response"></pre>
+
+    <script>
+        function sendCommand(command) {
+            fetch('http://<NICLA_IP>:8080', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain'
+                },
+                body: command
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('response').innerText = data;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>
