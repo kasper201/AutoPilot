@@ -3,16 +3,23 @@ import requests
   
   
 # define a video capture object 
-url = "http://192.168.137.154:8080/"
-vid = cv2.VideoCapture("http://192.168.137.154:8080/")
+url = "http://192.168.137.223:8080/"
+vid = cv2.VideoCapture(url)
+count = 0
 
 while True:
     # read frames from the video
     result, video_frame = vid.read()
-    requests.get(url, params={"command": command}, timeout=1.3)
+    count = count + 1
+    print(count)
+    if count == 30:
+        requests.get(url, params={"command": "HELLO"}, timeout=5)
+        print("Send")
+        count = 0
+        vid = cv2.VideoCapture(url)
     if result is False:
         break  # terminate the loop if the frame is not read successfully
-    print(video_frame)
+    #print(video_frame)
     #applies the function
 
     cv2.imshow(

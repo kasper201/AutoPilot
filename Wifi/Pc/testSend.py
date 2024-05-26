@@ -2,11 +2,11 @@ import requests
 import time
 
 # Nicla server address
-server_address = "http://192.168.137.154:8080/"
+server_address = "http://192.168.137.223:8080/"
 
 # Function to send command
 def send_command(command):
-    response = requests.get(server_address, params={"command": command})
+    response = requests.get(server_address, params={"command": command}, timeout=5)
     print("Sent command:", command)
 
 # Main loop

@@ -2,8 +2,8 @@ import cv2
   
   
 # define a video capture object 
-url = "http://192.168.137.154:8080/"
-vid = cv2.VideoCapture("http://192.168.137.154:8080/")
+url = "http://192.168.137.223:8080/"
+vid = cv2.VideoCapture("http://192.168.137.223:8080/")
 
 while True:
     # read frames from the video
