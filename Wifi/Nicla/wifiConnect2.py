@@ -116,10 +116,6 @@ while True:
     client.settimeout(5.0)
     print("Connected to " + addr[0] + ":" + str(addr[1]))
 
-    # Send initial response to indicate connection established
-    time.sleep(1)
-    client.sendall(b"HTTP/1.1 200 OK\r\n\r\nConnected to server\r\n")
-
     # Send multipart header for image streaming
     client.sendall(
         "HTTP/1.1 200 OK\r\n"

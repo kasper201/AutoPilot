@@ -38,6 +38,42 @@ s.listen(5)
 # Set server socket to blocking
 s.setblocking(True)
 
+# Function to handle commands from client
+def handle_client_command(client, data):
+    """Handles commands sent from the client."""
+    command = None
+    try:
+        # Parse HTTP request to extract command parameter
+        request_lines = data.decode('utf-8').split('\r\n')
+        first_line = request_lines[0]
+        # Split the first line by spaces to isolate the command part
+        command_parts = first_line.split()
+        # Check if the first line contains the command
+        if len(command_parts) > 1 and command_parts[0] == "GET":
+            # Extract the command from the URL
+            url = command_parts[1]
+            command_index = url.find("command=")
+            if command_index != -1:
+                command = url[command_index + len("command="):]
+    except Exception as e:
+        print("Error parsing request:", e)
+
+    print(command)
+    if command:
+        if command == "HELLO":
+            print("HELLO has been recieved")
+            client.sendall("HTTP/1.1 200 OK\r\n")
+            client.close()
+        elif command == "STATUS":
+            client.sendall("HTTP/1.1 200 OK\r\n")
+            print("STATUS has been recieved")
+            client.close()
+        else:
+            client.sendall("HTTP/1.1 200 OK\r\n")
+            print("UNKOWN COMMAND")
+            client.close()
+    else:
+        client.sendall(b"INVALID REQUEST\r\n")
 
 def start_streaming(s):
     print("Waiting for connections..")
@@ -47,7 +83,16 @@ def start_streaming(s):
     print("Connected to " + addr[0] + ":" + str(addr[1]))
 
     # Read request from client
-    data = client.recv(1024)
+    try:
+        data = client.recv(1024)
+        if data:
+            print("check2")
+            handle_client_command(client, data)
+    except OSError as e:
+        if e.args[0] == 110:  # 110 is 'ETIMEDOUT'
+            pass  # Timeout, continue with streaming
+        else:
+            raise e
     # Should parse client request here
 
     # Send multipart header
@@ -66,6 +111,7 @@ def start_streaming(s):
     # NOTE: Disable IDE preview to increase streaming FPS.
     while True:
         clock.tick()  # Track elapsed milliseconds between snapshots().
+
         frame = sensor.snapshot()
         cframe = frame.compressed(quality=35)
         header = (
@@ -75,6 +121,17 @@ def start_streaming(s):
         )
         client.sendall(header)
         client.sendall(cframe)
+        client.settimeout(0.1)
+        try:
+            data = client.recv(1024)
+            if data:
+                print("check3")
+                handle_client_command(client, data)
+        except OSError as e:
+            if e.args[0] == 110:  # 110 is 'ETIMEDOUT'
+                pass  # Timeout, continue with streaming
+            else:
+                raise e
         print(clock.fps())
 
 
