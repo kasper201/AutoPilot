@@ -12,7 +12,8 @@ while True:
     result, video_frame = vid.read()
     count = count + 1
     print(count)
-    if count == 30:
+    if count == 10: #Per aantal frames er een reactie verstuurd wordt
+        vid.release()
         requests.get(url, params={"command": "HELLO"}, timeout=5)
         print("Send")
         count = 0
