@@ -105,23 +105,20 @@ unsigned int reverseBits(uint8_t num) {
 int readData() {
   unsigned int speed = 0;
   bool lastValue;
+  static int previousBit = 1;
 
   //Serial.println("Reading data from Nicla...");
 
-  // Check for start bit (high-low transition)
-  if (!digitalRead(fromNicla)) {
-    delay(5);
-    if (digitalRead(fromNicla)) { // Ensure start bit is stable
-      Serial.println("Start bit detected");
-    } else {
-      //Serial.println("Error: Start bit not detected");
-      return -128;
-    }
+  
+  if (digitalRead(fromNicla) && previousBit == 1) { // check for start bit
+    Serial.println("Start bit detected");
   } else {
-    //Serial.println("Error: Missing start bit");
+    //Serial.println("Error: Start bit not detected");
+    previousBit = digitalRead(fromNicla);
     return -128;
   }
 
+  delay(2);
   // Read 8 data bits (LSB first)
   for (int i = 0; i < 9; i++) {
     delay(5);

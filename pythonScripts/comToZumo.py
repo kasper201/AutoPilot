@@ -49,13 +49,11 @@ def sendToZumo(speed, turn):
     toZumo.low() # set start bit
     pyb.delay(5)
     converter(speed)
-    pyb.delay(2)
     toZumo.high()
-    pyb.delay(5)
+    pyb.delay(20)
     toZumo.low() # set start bit
     pyb.delay(5)
     converter(turn)
-    pyb.delay(2)
     toZumo.high()
     pyb.delay(100)
 
@@ -72,5 +70,5 @@ while True:
     clock.tick()  # Update the FPS clock.
     img = sensor.snapshot()  # Take a picture and return the image.
     print(clock.fps())  # Note: OpenMV Cam runs about half as fast when connected
-    sendToZumo(100, 100)
+    sendToZumo(100, 80)
 
