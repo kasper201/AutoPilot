@@ -9,10 +9,10 @@ sensor.skip_frames(time=2000)
 clock = time.clock()
 
 # Define the regions of interest (ROIs), seen from human perspective on buffer
-roiFront = (0, 60, 480, 5)
-roiBack = (0, 110, 480, 5)
-rightRoiBack = (240, 110, 240, 5)
-leftRoiBack = (0, 110, 240, 5)
+roiFront = (60, 60, 340, 5)
+roiBack = (100, 112, 240, 5)
+rightRoiBack = (240, 112, 120, 5)
+leftRoiBack = (100, 112, 180, 5)
 
 # Function to count white pixels in an ROI
 def count_white_pixels(img, roi, pattern_name):
@@ -20,7 +20,14 @@ def count_white_pixels(img, roi, pattern_name):
     # For manual figuring out the value
     print(f"{pattern_name} mean ROI {roi}: {mean_value}")
     # Threshold for enough white pixels from line
-    return mean_value >= 4
+    return mean_value >= 130
+
+def count_white_pixelsBack(img, roi, pattern_name):
+    mean_value = img.get_statistics(roi=roi).mean()
+    # For manual figuring out the value
+    print(f"{pattern_name} mean ROI {roi}: {mean_value}")
+    # Threshold for enough white pixels from line
+    return mean_value >= 106
 
 # Functions for detecting each pattern
 def straightLine(img):
@@ -29,17 +36,17 @@ def straightLine(img):
     return False
 
 def intersection(img):
-    if count_white_pixels(img, roiFront, "Intersection") and not count_white_pixels(img, roiBack, "Intersection"):
+    if count_white_pixels(img, roiFront, "Intersection") and not count_white_pixelsBack(img, roiBack, "Intersection"):
         return True
     return False
 
 def leftTurn(img):
-    if count_white_pixels(img, roiFront, "Left turn") and count_white_pixels(img, leftRoiBack, "Left turn"):
+    if count_white_pixels(img, roiFront, "Left turn") and count_white_pixelsBack(img, leftRoiBack, "Left turn"):
         return True
     return False
 
 def rightTurn(img):
-    if count_white_pixels(img, roiFront, "Right turn") and count_white_pixels(img, rightRoiBack, "Right turn"):
+    if count_white_pixels(img, roiFront, "Right turn") and count_white_pixelsBack(img, rightRoiBack, "Right turn"):
         return True
     return False
 
@@ -54,8 +61,7 @@ while True:
     img.draw_rectangle(rightRoiBack, color=(0, 255, 0))  # Green
 
     img = img.to_grayscale()
-    #img = img.binary([(0, 49)])
-    img = img.binary([(18, 0)])
+    img = img.binary([(101, 20)])
 
     # Road type detection
     if straightLine(img):
