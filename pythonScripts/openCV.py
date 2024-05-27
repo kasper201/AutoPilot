@@ -14,6 +14,49 @@ runner = None
 show_camera = True
 if (sys.platform == 'linux' and not os.environ.get('DISPLAY')):
     show_camera = False
+# Define the regions of interest (ROIs)
+roiFront = (60, 60, 340, 5)
+roiBack = (100, 112, 240, 5)
+rightRoiBack = (240, 112, 120, 5)
+leftRoiBack = (100, 112, 180, 5)
+
+# Function to count white pixels in an ROI
+def count_white_pixels(img, roi, pattern_name):
+    roi_img = img[roi[1]:roi[1]+roi[3], roi[0]:roi[0]+roi[2]]
+    mean_value = cv2.mean(roi_img)[0]
+    # For manual figuring out the value
+    print(f"{pattern_name} mean ROI {roi}: {mean_value}")
+    # Threshold for enough white pixels from line
+    return mean_value >= 130
+
+def count_white_pixelsBack(img, roi, pattern_name):
+    roi_img = img[roi[1]:roi[1]+roi[3], roi[0]:roi[0]+roi[2]]
+    mean_value = cv2.mean(roi_img)[0]
+    # For manual figuring out the value
+    print(f"{pattern_name} mean ROI {roi}: {mean_value}")
+    # Threshold for enough white pixels from line
+    return mean_value >= 106
+
+# Functions for detecting each pattern
+def straightLine(img):
+    if count_white_pixels(img, roiFront, "Straight line") and count_white_pixels(img, roiBack, "Straight line"):
+        return True
+    return False
+
+def intersection(img):
+    if count_white_pixels(img, roiFront, "Intersection") and not count_white_pixelsBack(img, roiBack, "Intersection"):
+        return True
+    return False
+
+def leftTurn(img):
+    if count_white_pixels(img, roiFront, "Left turn") and count_white_pixelsBack(img, leftRoiBack, "Left turn"):
+        return True
+    return False
+
+def rightTurn(img):
+    if count_white_pixels(img, roiFront, "Right turn") and count_white_pixelsBack(img, rightRoiBack, "Right turn"):
+        return True
+    return False
 
 def now():
     return round(time.time() * 1000)
@@ -97,6 +140,7 @@ def main(argv):
             next_frame = 0 # limit to ~10 fps here
 
             for res, img in runner.classifier(videoCaptureDeviceId):
+                #Object detection
                 if (next_frame > now()):
                     time.sleep((next_frame - now()) / 1000)
 
@@ -114,6 +158,21 @@ def main(argv):
                     for bb in res["result"]["bounding_boxes"]:
                         print('\t%s (%.2f): x=%d y=%d w=%d h=%d' % (bb['label'], bb['value'], bb['x'], bb['y'], bb['width'], bb['height']))
                         img = cv2.rectangle(img, (bb['x'], bb['y']), (bb['x'] + bb['width'], bb['y'] + bb['height']), (255, 0, 0), 1)
+                # Line detection
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                # Script crashes if the actions are performed on binarized result
+                #ret, binary = cv2.threshold(gray, 45, 255, cv2.THRESH_BINARY_INV)
+
+                if straightLine(gray):
+                    print("Straight line")
+                elif leftTurn(gray):
+                    print("Left turn")
+                elif rightTurn(gray):
+                    print("Right turn")
+                elif intersection(gray):
+                    print("Intersection")
+                else:
+                    print("Unknown")
 
                 if (show_camera):
                     cv2.imshow('edgeimpulse', cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
@@ -125,5 +184,5 @@ def main(argv):
             if (runner):
                 runner.stop()
 
-if __name__ == "__main__":
+if __name__ == "__main__":#
    main(sys.argv[1:])

@@ -12,6 +12,8 @@
   - [No Xv port](#no-xv-port)
   - [Pipeline doesnt want to pause](#pipeline-doesnt-want-to-pause)
   - [Not-negotiated](#not-negotiated)
+  - [](#)
+  - [Ignorable errors](#ignorable-errors)
   - [GST sanity check](#gst-sanity-check)
 
 # Nicla side
@@ -189,6 +191,32 @@ Freeing pipeline ...
 
 Not fixed 
 
+## 
+```
+Loaded runner for "nope / objectFOMO"
+[ WARN:0] global ../modules/videoio/src/cap_gstreamer.cpp (1758) handleMessage OpenCV | GStreamer warning: Embedded video playback halted; module v4l2src0 reported: Internal data stream error.
+[ WARN:0] global ../modules/videoio/src/cap_gstreamer.cpp (888) open OpenCV | GStreamer warning: unable to start pipeline
+[ WARN:0] global ../modules/videoio/src/cap_gstreamer.cpp (480) isPipelinePlaying OpenCV | GStreamer warning: GStreamer: pipeline have not been created
+Camera V4L2 (480.0 x 640.0) in port 0 selected.
+```
+Restart vm
+## Ignorable errors
+```
+C:\home\npc\Documents\edge> python3 classify.py modelfile.eim 0
+MODEL: /home/npc/Documents/edge/modelfile.eim
+Loaded runner for "nope / objectFOMO"
+[ WARN:0] global ../modules/videoio/src/cap_gstreamer.cpp (1758) handleMessage OpenCV | GStreamer warning: Embedded video playback halted; module v4l2src0 reported: Internal data stream error.
+[ WARN:0] global ../modules/videoio/src/cap_gstreamer.cpp (888) open OpenCV | GStreamer warning: unable to start pipeline
+[ WARN:0] global ../modules/videoio/src/cap_gstreamer.cpp (480) isPipelinePlaying OpenCV | GStreamer warning: GStreamer: pipeline have not been created
+Camera V4L2 (480.0 x 640.0) in port 0 selected.
+[ WARN:0] global ../modules/videoio/src/cap_gstreamer.cpp (1758) handleMessage OpenCV | GStreamer warning: Embedded video playback halted; module v4l2src1 reported: Internal data stream error.
+[ WARN:0] global ../modules/videoio/src/cap_gstreamer.cpp (888) open OpenCV | GStreamer warning: unable to start pipeline
+[ WARN:0] global ../modules/videoio/src/cap_gstreamer.cpp (480) isPipelinePlaying OpenCV | GStreamer warning: GStreamer: pipeline have not been created
+Found 0 bounding boxes (5 ms.)
+Found 1 bounding boxes (0 ms.)
+	B01 (0.63): x=16 y=48 w=8 h=8
+Found 1 bounding boxes (0 ms.)
+```
 ## GST sanity check
 gst-launch-1.0 videotestsrc ! autovideosink
 
