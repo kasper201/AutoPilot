@@ -97,6 +97,9 @@ def main(argv):
 
             # imread returns images in BGR format, so we need to convert to RGB
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            
+            #Prevent image from being cropped by adding a border below it
+            img = cv2.copyMakeBorder(img, 0, 160, 0, 0, cv2.BORDER_CONSTANT, value=[0, 0, 0])
 
             # get_features_from_image also takes a crop direction arguments in case you don't have square images
             features, cropped = runner.get_features_from_image(img)
