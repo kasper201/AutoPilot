@@ -2,6 +2,7 @@ import sensor
 import time
 import network
 import socket
+import os
 
 SSID = "Nicla"  # Network SSID
 KEY = "Weerstation"  # Network key
@@ -12,12 +13,17 @@ PORT = 8080  # Arbitrary non-privileged port
 sensor.reset()
 sensor.set_framesize(sensor.HVGA)
 sensor.set_pixformat(sensor.RGB565)
-sensor.set_vflip(True)
 sensor.ioctl(sensor.IOCTL_SET_FOV_WIDE, True)
 
 # Init wlan module and connect to network
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
+
+# Check if already connected
+if wlan.isconnected():
+    # Disconnect if already connected
+    wlan.disconnect()
+
 wlan.connect(SSID, KEY)
 
 while not wlan.isconnected():
@@ -118,21 +124,19 @@ def respond_with_text(client, response_body):
 
 def respond_with_image(client):
     frame = sensor.snapshot()
-    frame.save("/temp.jpg", quality=95)  # Save snapshot as JPEG
+    cframe = frame.compressed(quality=75)
 
-    # Read the saved JPEG image
-    with open("/temp.jpg", "rb") as f:
-        image_data = f.read()
 
     # Send HTTP response with image data
     http_response = (
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: image/jpeg\r\n"
-        "Content-Length: " + str(len(image_data)) + "\r\n"
+        "Content-Length: " + str(cframe.size()) + "\r\n"
         "Connection: keep-alive\r\n"
         "\r\n"
     )
-    client.sendall(http_response.encode('utf-8') + image_data)
+    client.sendall(http_response.encode('utf-8') + cframe)
+
 
 def start_streaming(s):
     print("Waiting for connections..")
@@ -140,7 +144,6 @@ def start_streaming(s):
     # set client socket timeout to 5s
     client.settimeout(5.0)
     print("Connected to " + addr[0] + ":" + str(addr[1]))
-    # Should parse client request here
 
     # Start streaming images
     # NOTE: Disable IDE preview to increase streaming FPS.
@@ -155,7 +158,6 @@ def start_streaming(s):
                 pass  # Timeout, continue with streaming
             else:
                 raise e
-        #print(clock.fps())
 
 
 while True:
