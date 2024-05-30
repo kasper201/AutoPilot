@@ -36,7 +36,7 @@ s.bind([HOST, PORT])
 s.listen(5)
 
 # Set server socket to blocking
-s.setblocking(True)
+#s.setblocking(True)
 
 def extract_integer_from_string(input_string):
     keyword = "Integer%3D"
@@ -131,15 +131,6 @@ def start_streaming(s):
             raise e
     # Should parse client request here
 
-    # Send multipart header
-    client.sendall(
-        "HTTP/1.1 200 OK\r\n"
-        "Server: OpenMV\r\n"
-        "Content-Type: multipart/x-mixed-replace;boundary=openmv\r\n"
-        "Cache-Control: no-cache\r\n"
-        "Pragma: no-cache\r\n\r\n"
-    )
-
     # FPS clock
     clock = time.clock()
 
@@ -148,16 +139,7 @@ def start_streaming(s):
     while True:
         clock.tick()  # Track elapsed milliseconds between snapshots().
 
-        frame = sensor.snapshot()
-        cframe = frame.compressed(quality=35)
-        header = (
-            "\r\n--openmv\r\n"
-            "Content-Type: image/jpeg\r\n"
-            "Content-Length:" + str(cframe.size()) + "\r\n\r\n"
-        )
-        client.sendall(header)
-        client.sendall(cframe)
-        client.settimeout(0.1)
+        #frame = sensor.snapshot()
         try:
             data = client.recv(1024)
             if data:
