@@ -79,11 +79,11 @@ int drive(int velocity, int yaw)
   L = 2.5 * (deltaVelocity + deltaYaw);
   R = 2.5 * (deltaVelocity - deltaYaw);
   motors.setSpeeds(L,R);
-  display.clear();
+  /*display.clear();
   display.gotoXY(0,0);
-  display.print(L);
+  display.print(velocity);
   display.gotoXY(0,1);
-  display.print(R);
+  display.print(yaw);*/
   return 0;
 }
 
@@ -176,29 +176,31 @@ void loop()
       dt = millis();
     }
     while(i == -128);
+
     do
     {
       j = readData();
     }
-    while(i == -128);
+    while(j == -128);
 
     unsigned long currentTime = millis();
 
-    if((currentTime - lastTime) > 100)
+    if((currentTime - lastTime) < 100)
     {
-      if(i != -128)
-        velocity = i;
-      if(j != -128)
-        yaw = j;
+      yaw = j;
+      velocity = i;
+    } else {
+      yaw = i;
+      velocity = j;      
     }
 
     lastTime = currentTime;    
     e = drive(velocity, yaw);  
-    /*display.clear();
+    display.clear();
     display.gotoXY(0,0);
     display.print(velocity);
     display.gotoXY(0,1);
-    display.print(yaw);*/
+    display.print(yaw);
   }
   //delay(1000);
 }
