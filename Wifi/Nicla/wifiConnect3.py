@@ -101,15 +101,14 @@ def handle_client_command(client, data):
     http_response = (
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/plain\r\n"
-        f"Content-Length: {len(response_body)}\r\n"
-        "Connection: close\r\n"
+        "Content-Length: " + str(len(response_body)) + "\r\n"
+        "Connection: keep-alive\r\n"
         "\r\n"
-        f"{response_body}"
+        + response_body
     )
 
     # Send the HTTP response to the client
     client.sendall(http_response.encode('utf-8'))
-    client.close()
 
 
 def start_streaming(s):
