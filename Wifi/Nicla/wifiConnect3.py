@@ -75,30 +75,42 @@ def handle_client_command(client, data):
     except Exception as e:
         print("Error parsing request:", e)
 
-    print(command)
+    response_body = ""
     if command:
         if command == "HELLO":
-            print("HELLO has been recieved")
-            client.sendall("HTTP/1.1 200 OK\r\n")
-            client.close()
+            print("HELLO has been received")
+            response_body = "HELLO response"
         elif command == "STATUS":
-            client.sendall("HTTP/1.1 200 OK\r\n")
-            print("STATUS has been recieved")
-            client.close()
+            print("STATUS has been received")
+            response_body = "STATUS response"
         elif "Integer" in command:
-            client.sendall("HTTP/1.1 200 OK\r\n")
             integer_value = extract_integer_from_string(command)
             if integer_value is not None:
                 print(f"Extracted integer: {integer_value}")
+                response_body = f"Extracted integer: {integer_value}"
             else:
                 print("No integer found in the string.")
-            client.close()
+                response_body = "No integer found in the string."
         else:
-            client.sendall("HTTP/1.1 200 OK\r\n")
-            print("UNKOWN COMMAND")
-            client.close()
+            print("UNKNOWN COMMAND")
+            response_body = "UNKNOWN COMMAND"
     else:
-        client.sendall(b"INVALID REQUEST\r\n")
+        response_body = "INVALID REQUEST"
+
+    # Create the HTTP response
+    http_response = (
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/plain\r\n"
+        f"Content-Length: {len(response_body)}\r\n"
+        "Connection: close\r\n"
+        "\r\n"
+        f"{response_body}"
+    )
+
+    # Send the HTTP response to the client
+    client.sendall(http_response.encode('utf-8'))
+    client.close()
+
 
 def start_streaming(s):
     print("Waiting for connections..")

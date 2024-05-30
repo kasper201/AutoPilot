@@ -8,6 +8,7 @@ server_address = "http://192.168.137.223:8080/"
 def send_command(command):
     response = requests.get(server_address, params={"command": command}, timeout=5)
     print("Sent command:", command)
+    print(response)
 
 # Main loop
 while True:
