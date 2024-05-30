@@ -77,26 +77,32 @@ def handle_client_command(client, data):
 
     response_body = ""
     if command:
-        if command == "HELLO":
-            print("HELLO has been received")
-            response_body = "HELLO response"
-        elif command == "STATUS":
+        if command == "STATUS":
             print("STATUS has been received")
-            response_body = "STATUS response"
+            response_body = "STATUS OK"
+            respond_with_text(client, response_body)
+        elif command == "VISION":
+            print("VISION request recieved")
+            response_body = "VISION has been requested"
+            respond_with_image(client)
         elif "Integer" in command:
             integer_value = extract_integer_from_string(command)
             if integer_value is not None:
                 print(f"Extracted integer: {integer_value}")
                 response_body = f"Extracted integer: {integer_value}"
+                respond_with_text(client, response_body)
             else:
                 print("No integer found in the string.")
                 response_body = "No integer found in the string."
+                respond_with_text(client, response_body)
         else:
             print("UNKNOWN COMMAND")
             response_body = "UNKNOWN COMMAND"
+            respond_with_text(client, response_body)
     else:
         response_body = "INVALID REQUEST"
 
+def respond_with_text(client, response_body):
     # Create the HTTP response
     http_response = (
         "HTTP/1.1 200 OK\r\n"
@@ -110,6 +116,23 @@ def handle_client_command(client, data):
     # Send the HTTP response to the client
     client.sendall(http_response.encode('utf-8'))
 
+def respond_with_image(client):
+    frame = sensor.snapshot()
+    frame.save("/temp.jpg", quality=95)  # Save snapshot as JPEG
+
+    # Read the saved JPEG image
+    with open("/temp.jpg", "rb") as f:
+        image_data = f.read()
+
+    # Send HTTP response with image data
+    http_response = (
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: image/jpeg\r\n"
+        "Content-Length: " + str(len(image_data)) + "\r\n"
+        "Connection: keep-alive\r\n"
+        "\r\n"
+    )
+    client.sendall(http_response.encode('utf-8') + image_data)
 
 def start_streaming(s):
     print("Waiting for connections..")
@@ -117,33 +140,15 @@ def start_streaming(s):
     # set client socket timeout to 5s
     client.settimeout(5.0)
     print("Connected to " + addr[0] + ":" + str(addr[1]))
-
-    # Read request from client
-    try:
-        data = client.recv(1024)
-        if data:
-            print("check2")
-            handle_client_command(client, data)
-    except OSError as e:
-        if e.args[0] == 110:  # 110 is 'ETIMEDOUT'
-            pass  # Timeout, continue with streaming
-        else:
-            raise e
     # Should parse client request here
-
-    # FPS clock
-    clock = time.clock()
 
     # Start streaming images
     # NOTE: Disable IDE preview to increase streaming FPS.
     while True:
-        clock.tick()  # Track elapsed milliseconds between snapshots().
 
-        #frame = sensor.snapshot()
         try:
             data = client.recv(1024)
             if data:
-                print("check3")
                 handle_client_command(client, data)
         except OSError as e:
             if e.args[0] == 110:  # 110 is 'ETIMEDOUT'
