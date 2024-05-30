@@ -38,6 +38,23 @@ s.listen(5)
 # Set server socket to blocking
 s.setblocking(True)
 
+def extract_integer_from_string(input_string):
+    keyword = "Integer%3D"
+    try:
+        # Find the start index of the keyword
+        start_index = input_string.index(keyword) + len(keyword)
+        # Slice the string from the end of the keyword to the end of the string
+        substring = input_string[start_index:]
+        # Find where the number ends
+        end_index = start_index
+        while end_index < len(input_string) and input_string[end_index].isdigit():
+            end_index += 1
+        # Convert the extracted substring to an integer
+        integer_value = int(input_string[start_index:end_index])
+        return integer_value
+    except (ValueError, IndexError) as e:
+        return None
+
 # Function to handle commands from client
 def handle_client_command(client, data):
     """Handles commands sent from the client."""
@@ -67,6 +84,14 @@ def handle_client_command(client, data):
         elif command == "STATUS":
             client.sendall("HTTP/1.1 200 OK\r\n")
             print("STATUS has been recieved")
+            client.close()
+        elif "Integer" in command:
+            client.sendall("HTTP/1.1 200 OK\r\n")
+            integer_value = extract_integer_from_string(command)
+            if integer_value is not None:
+                print(f"Extracted integer: {integer_value}")
+            else:
+                print("No integer found in the string.")
             client.close()
         else:
             client.sendall("HTTP/1.1 200 OK\r\n")
@@ -132,7 +157,7 @@ def start_streaming(s):
                 pass  # Timeout, continue with streaming
             else:
                 raise e
-        print(clock.fps())
+        #print(clock.fps())
 
 
 while True:
