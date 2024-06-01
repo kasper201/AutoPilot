@@ -99,3 +99,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+    # [flits@KaspersPC pythonScripts]$ source //home/flits/SchoolProjects/AutoPilot/myenv/bin/activate
+ # (myenv) [flits@KaspersPC pythonScripts]$ 
+
+

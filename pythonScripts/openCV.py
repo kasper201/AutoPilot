@@ -7,6 +7,7 @@ import os
 import sys, getopt
 import signal
 import time
+import numpy as np
 from edge_impulse_linux.image import ImageImpulseRunner
 
 runner = None
@@ -19,6 +20,8 @@ roiFront = (60, 60, 340, 5)
 roiBack = (100, 112, 240, 5)
 rightRoiBack = (240, 112, 120, 5)
 leftRoiBack = (100, 112, 180, 5)
+roiLeft = (100, 60, 150, 50)
+roiRight = (240, 60, 150, 50)
 
 # Function to count white pixels in an ROI
 def count_white_pixels(img, roi, pattern_name):
@@ -36,6 +39,52 @@ def count_white_pixelsBack(img, roi, pattern_name):
     print(f"{pattern_name} mean ROI {roi}: {mean_value}")
     # Threshold for enough white pixels from line
     return mean_value >= 106
+
+def countDistance(frame):
+
+    # Apply Canny edge detection
+    edges = cv2.Canny(frame, 50, 150)
+    
+    # Apply a region of interest mask to focus on the road
+    mask = np.zeros_like(edges)
+    cv2.fillPoly(mask, [np.array([(0, 185), (frame.shape[1], 185), (frame.shape[1], 0), (0, 0)])], 255)
+    masked_edges = cv2.bitwise_and(edges, mask)
+    
+    # Apply Hough transform to detect lines
+    lines = cv2.HoughLinesP(masked_edges, rho=1, theta=np.pi/180, threshold=50, minLineLength=30, maxLineGap=100)
+    
+    # Initialize variables to store information about the road
+    left_lane_lines = []
+    right_lane_lines = []
+    
+    # Filter lines into left and right lanes based on slope
+    if lines is not None:
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            slope = (y2 - y1) / (x2 - x1 + 1e-6)  # Adding a small value to avoid division by zero
+            if abs(slope) < 0.5:  # Ignore lines with a slope less than 0.5 to avoid horizontal lines
+                continue
+            if slope < 0:
+                left_lane_lines.append(line)
+            elif slope > 0:
+                right_lane_lines.append(line)
+
+    # Determine the car position relative to the lanes
+    if len(left_lane_lines) > 0 and len(right_lane_lines) > 0:
+        # Calculate the midpoint of the lanes
+        left_x = int(np.mean([line[0][0] for line in left_lane_lines]))
+        right_x = int(np.mean([line[0][2] for line in right_lane_lines]))
+        road_center = (left_x + right_x) // 2
+        frame_center = frame.shape[1] // 2
+        
+        print("frame center: ", frame_center)
+        print("road center: ", road_center)
+        position 
+    else:
+        position = -128
+        print("Road Not Detected")
+    
+
 
 # Functions for detecting each pattern
 def straightLine(img):
@@ -57,6 +106,10 @@ def rightTurn(img):
     if count_white_pixels(img, roiFront, "Right turn") and count_white_pixelsBack(img, rightRoiBack, "Right turn"):
         return True
     return False
+
+def center(bin):
+    countDistance(bin)
+    return 0
 
 def help():
     print('python classify-image.py <path_to_model.eim> <path_to_image.jpg>')
@@ -140,6 +193,8 @@ def main(argv):
                  print("Intersection")
             else:
                  print("Unknown")
+
+            center(gray_img)
 
             # the image will be resized and cropped, save a copy of the picture here
             # so you can see what's being passed into the classifier
