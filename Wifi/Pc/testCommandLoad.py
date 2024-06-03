@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 
 # Nicla server address
-server_address = "http://192.168.137.115:8080/"
+server_address = "http://192.168.90.29:8080/"
 count = 0
 
 # Create a session object to reuse connections
@@ -38,8 +38,12 @@ while True:
     # Send the command
     send_command("VISION")
     
-    command = "Integer=" + str(count)
+    speed = 100
+    turn = 100
+    control = speed * 200 + turn
+    command = "Integer=" + str(control)
     send_command(command)
+    time.sleep(0.2)
     count = count + 1
     current_time = time.strftime("%H:%M:%S", time.localtime())
     print("Current time:", current_time)
