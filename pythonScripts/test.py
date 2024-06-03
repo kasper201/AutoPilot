@@ -4,7 +4,11 @@ import cv2
   
   
 # define a video capture object 
-vid = cv2.VideoCapture(0) 
+vid = cv2.VideoCapture(0)
+image = cv2.imread('selfie.jpg')
+
+# Display the image
+cv2.imshow('Image', image)
 
 #doublecheck
 face_classifier = cv2.CascadeClassifier(
@@ -12,17 +16,19 @@ face_classifier = cv2.CascadeClassifier(
 )
 def detect_bounding_box(vid):
     gray_image = cv2.cvtColor(vid, cv2.COLOR_BGR2GRAY)
-    faces = face_classifier.detectMultiScale(gray_image, 1.1, 5, minSize=(40, 40))
+    faces = face_classifier.detectMultiScale(gray_image, 1.1, 100, minSize=(40, 40))
     for (x, y, w, h) in faces:
-        cv2.rectangle(vid, (x, y), (x + w, y + h), (0, 255, 0), 4)
+        cv2.rectangle(vid, (x, y), (x + w, y + h), (0, 255, 0), 1)
+    cv2.rectangle(vid, (10, 10), (20 + 20 , 20 + 20), (0, 0, 255), 10)
     return faces
 
 while True:
     # read frames from the video
+   
     result, video_frame = vid.read()
     if result is False:
         break  # terminate the loop if the frame is not read successfully
-
+     
     #applies the function
     faces = detect_bounding_box(
         video_frame
