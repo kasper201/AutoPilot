@@ -2,16 +2,66 @@ import sensor
 import time
 import network
 import socket
+import pyb
+from machine import Pin
+
+# define the communication pins to the zumo
+fromZumo = Pin("PA10", Pin.IN)
+toZumo = Pin("PA9", Pin.OUT_PP)
+toZumo.high() # start with toZumo high
 
 SSID = "Nicla"  # Network SSID
 KEY = "Weerstation"  # Network key
 HOST = ""  # Use first available interface
 PORT = 8080  # Arbitrary non-privileged port
 
+def converter(nr): # convert number to signal
+    global toZumo # Declare toZumo again to make sure its using the global variable
+    #print(nr)
+    #if nr < 0:
+    #       nr = ((-nr) ^ 0xFF) + 1  # Two's complement conversion
+    waarde = nr & 0b11111111
+    #print(waarde)
+    i = 0
+    tmp = waarde
+    while i < 8:
+        #print(f"{tmp:08b}")
+        #print("gewoon doen", waarde)
+        tmp = tmp & 0b1
+        #print(tmp)
+        if (tmp):
+            toZumo.high()
+        else:
+            toZumo.low()
+        pyb.delay(5)
+        i += 1
+        waarde = waarde >> 1
+        tmp = waarde
+
+# the sendToZumo function converts speed and turn to a signal for the zumo to pick up
+# speed is 100 to -100 and turn is 100 to -100
+def sendToZumo(speed, turn):
+    if (speed > 100 or speed < -100 or turn > 100 or turn < -100):
+        print("Illegal value entered! Value must stay between -100 and 100")
+    print("sending to zumo")
+    global toZumo
+    toZumo.low() # set start bit
+    pyb.delay(5)
+    converter(speed)
+    toZumo.high()
+    pyb.delay(20)
+    toZumo.low() # set start bit
+    pyb.delay(5)
+    converter(turn)
+    toZumo.high()
+    pyb.delay(50)
+
+
 # Init sensor
 sensor.reset()
 sensor.set_framesize(sensor.HVGA)
 sensor.set_pixformat(sensor.RGB565)
+sensor.set_auto_exposure(False, exposure_us=1)
 sensor.ioctl(sensor.IOCTL_SET_FOV_WIDE, True)
 
 # Init wlan module and connect to network
@@ -94,8 +144,11 @@ def handle_client_command(client, data):
             integer_value = extract_integer_from_string(command)
             if integer_value is not None:
                 print(f"Extracted integer: {integer_value}")
+                speed = round(integer_value / 200) - 100
+                turn = integer_value % 200 - 100
                 response_body = f"Extracted integer: {integer_value}"
                 respond_with_text(client, response_body)
+                sendToZumo(speed, turn)
             else:
                 print("No integer found in the string.")
                 response_body = "No integer found in the string."
@@ -106,6 +159,7 @@ def handle_client_command(client, data):
             respond_with_text(client, response_body)
     else:
         response_body = "INVALID REQUEST"
+        respond_with_text(client, response_body)
 
 def respond_with_text(client, response_body):
     # Create the HTTP response
