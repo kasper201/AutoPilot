@@ -1,16 +1,25 @@
-#!/usr/bin/env python
-
-#import device_patches       # Device specific patches for Jetson Nano (needs to be before importing cv2)
-
+import requests
+import time
+import numpy as np
 import cv2
 import os
 import sys, getopt
 import signal
-import time
-import numpy as np
 from edge_impulse_linux.image import ImageImpulseRunner
 
+# Nicla server address
+server_address = "http://192.168.90.29:8080/"
+count = 0
+
+# Create a session object to reuse connections
+session = requests.Session()
+
+# Edge Impulse specifics
 runner = None
+dir_path = os.path.dirname(os.path.realpath(__file__))
+modelfile = "modelfileV3.eim" 
+model = "modelfileV3.eim"
+
 # if you don't want to see a camera preview, set this to False
 show_camera = True
 if (sys.platform == 'linux' and not os.environ.get('DISPLAY')):
@@ -83,8 +92,31 @@ def countDistance(frame):
     else:
         position = -128
         print("Road Not Detected")
-    
 
+
+
+# Function to send command
+def send_command(command):
+    response = session.get(server_address, params={"command": command})
+    print("Sent command:", command)
+    if response.status_code == 200:
+        content_type = response.headers.get('Content-Type', '')
+        
+        if 'image' in content_type:
+            print("Response is an image")
+            image_data = response.content
+            # Decode image data
+            image_np = np.frombuffer(image_data, dtype=np.uint8)
+            image = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
+            imageDetection(image)
+            # Display the image in a window
+            cv2.imshow('Image', image)
+            cv2.waitKey(1)
+            #return image_data
+        else:
+            print("Response body:", response.text)
+    else:
+        print("Error:", response.status_code)
 
 # Functions for detecting each pattern
 def straightLine(img):
@@ -112,38 +144,17 @@ def center(bin):
     return 0
 
 def help():
-    print('python classify-image.py <path_to_model.eim> <path_to_image.jpg>')
+    print('python classify-image.py <path_to_model.eim>')
 
-def main(argv):
-    try:
-        opts, args = getopt.getopt(argv, "h", ["--help"])
-    except getopt.GetoptError:
-        help()
-        sys.exit(2)
-
-    for opt, arg in opts:
-        if opt in ('-h', '--help'):
-            help()
-            sys.exit()
-
-    if len(args) != 2:
-        help()
-        sys.exit(2)
-
-    model = args[0]
-
-    dir_path = os.path.dirname(os.path.realpath(__file__))
+def imageDetection(image):
     modelfile = os.path.join(dir_path, model)
-
-    print('MODEL: ' + modelfile)
-
     with ImageImpulseRunner(modelfile) as runner:
         try:
             model_info = runner.init()
             print('Loaded runner for "' + model_info['project']['owner'] + ' / ' + model_info['project']['name'] + '"')
             labels = model_info['model_parameters']['labels']
 
-            img = cv2.imread(args[1])
+            img = image
             if img is None:
                 print('Failed to load image', args[1])
                 exit(1)
@@ -203,6 +214,50 @@ def main(argv):
         finally:
             if (runner):
                 runner.stop()
+
+def main(argv):
+    print('debug')
+    try:
+        opts, args = getopt.getopt(argv, "h", ["--help"])
+    except getopt.GetoptError:
+        help()
+        sys.exit(2)
+
+    for opt, arg in opts:
+        if opt in ('-h', '--help'):
+            help()
+            sys.exit()
+
+    if len(args) != 1:
+        help()
+        sys.exit(2)
+    print('debug')
+
+    model = args[0]
+
+	# Main loop communication
+    # Get user input for the command
+    
+    speed = 100
+    turn = 100
+    control = speed * 200 + turn
+    command = "Integer=" + str(control)
+    send_command(command)
+    time.sleep(0.2)
+    #count = count + 1
+    current_time = time.strftime("%H:%M:%S", time.localtime())
+    print("Current time:", current_time)
+    # Add a delay if needed
+
+    #dir_path = os.path.dirname(os.path.realpath(__file__))
+    #modelfile = os.path.join(dir_path, model)
+
+    print('MODEL: ' + modelfile)
+    while True:
+        # Send the command
+        send_command("VISION")
+        time.sleep(0.2)
+
 
 if __name__ == "__main__":#
    main(sys.argv[1:])
