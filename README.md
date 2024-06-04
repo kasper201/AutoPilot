@@ -2,10 +2,8 @@
 
 ## Features
 
-- Detect a face
-- Censor faces
-- Detect 2 signs
-- Filter out lines to only detect certain colour lines
+- Detect 4 signs
+- Follow a road
 
 ## Installation
 OpenMV
