@@ -156,6 +156,22 @@ def turnLeft():
 def help():
     print('python classify-image.py <path_to_model.eim>')
 
+def signNumbers(labels):
+    return {'50':"SIGN Integer=4",
+            'B01':"SIGN Integer=5",
+            'b02':"",
+            'b07':"SIGN Integer=6",
+            'c02':"",
+            'c04':"SIGN Integer=7",
+            'e01':"",
+            'e02':"",
+            'F01':"",
+            'green':"SIGN Integer=3",
+            'l08':"",
+            'orange':"SIGN Integer=2",
+            'red':"SIGN Integer=1",
+    }[labels]
+
 def imageDetection(image):
     modelfile = os.path.join(dir_path, model)
     with ImageImpulseRunner(modelfile) as runner:
@@ -179,6 +195,8 @@ def imageDetection(image):
             features, cropped = runner.get_features_from_image(img)
 
             res = runner.classify(features)
+            #if len(res["result"]["bounding_boxes"]) >= 1:
+            #   print('Sign found!'
             if len(res["result"]["bounding_boxes"]) >= 1:
                 print('Sign found!')
 
@@ -192,6 +210,8 @@ def imageDetection(image):
             elif "bounding_boxes" in res["result"].keys():
                 print('Found %d bounding boxes (%d ms.)' % (len(res["result"]["bounding_boxes"]), res['timing']['dsp'] + res['timing']['classification']))
                 for bb in res["result"]["bounding_boxes"]:
+                    # Send string of label
+                    send_command(signNumbers(bb['label']))
                     print('\t%s (%.2f): x=%d y=%d w=%d h=%d' % (bb['label'], bb['value'], bb['x'], bb['y'], bb['width'], bb['height']))
                     cropped = cv2.rectangle(cropped, (bb['x'], bb['y']), (bb['x'] + bb['width'], bb['y'] + bb['height']), (255, 0, 0), 1)
 
