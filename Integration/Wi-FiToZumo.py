@@ -61,8 +61,11 @@ def sendToZumo(speed, turn):
 sensor.reset()
 sensor.set_framesize(sensor.HVGA)
 sensor.set_pixformat(sensor.RGB565)
-#sensor.set_auto_exposure(False, exposure_us=1)
 sensor.ioctl(sensor.IOCTL_SET_FOV_WIDE, True)
+
+ledR = pyb.LED(1) # Red
+ledG = pyb.LED(2) # Green
+ledB = pyb.LED(3) # Blue
 
 # Init wlan module and connect to network
 wlan = network.WLAN(network.STA_IF)
@@ -140,13 +143,45 @@ def handle_client_command(client, data):
             print("VISION request recieved")
             response_body = "VISION has been requested"
             respond_with_image(client)
+            ledR.off()
+            ledG.off()
+            ledB.off()
+        elif "SIGN" in command:
+            integer_value = extract_integer_from_string(command)
+            if integer_value is not None:
+                print(f"Sign: {integer_value}")
+                response_body = f"Sign: {integer_value}"
+                respond_with_text(client, response_body)
+                if integer_value == 1 :
+                    ledR.on()
+                elif integer_value == 2:
+                    ledR.on()
+                    ledG.on()
+                elif integer_value == 3:
+                    ledG.on()
+                elif integer_value == 4:
+                    ledB.on()
+                elif integer_value == 5:
+                    ledB.on()
+                    ledG.on()
+                elif integer_value == 6:
+                    ledB.on()
+                    ledR.on()
+                elif integer_value == 7:
+                    ledR.on()
+                    ledG.on()
+                    ledB.on()
+            else:
+                print("No integer found in the string.")
+                response_body = "No integer found in the string."
+                respond_with_text(client, response_body)
         elif "Integer" in command:
             integer_value = extract_integer_from_string(command)
             if integer_value is not None:
                 print(f"Extracted integer: {integer_value}")
                 speed = round(integer_value / 200) - 100
                 turn = integer_value % 200 - 100
-                response_body = f"Extracted integer: {integer_value}"
+                response_body = f"Extracted integer: {integer_value}, speed: {speed}, turn: {turn}"
                 respond_with_text(client, response_body)
                 sendToZumo(speed, turn)
             else:
@@ -160,7 +195,6 @@ def handle_client_command(client, data):
     else:
         response_body = "INVALID REQUEST"
         respond_with_text(client, response_body)
-        sendToZumo(0,0)
 
 def respond_with_text(client, response_body):
     # Create the HTTP response
