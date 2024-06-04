@@ -179,6 +179,8 @@ def imageDetection(image):
             features, cropped = runner.get_features_from_image(img)
 
             res = runner.classify(features)
+            if len(res["result"]["bounding_boxes"]) >= 1:
+                print('Sign found!')
 
             if "classification" in res["result"].keys():
                 print('Result (%d ms.) ' % (res['timing']['dsp'] + res['timing']['classification']), end='')
