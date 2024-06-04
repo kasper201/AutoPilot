@@ -158,6 +158,7 @@ int readData() {
 
 void loop()
 {
+  bool inverse = 0;
   int i = 0, j = 0;
   int dt = 0;
   int yaw, velocity, e = 0;
@@ -170,6 +171,14 @@ void loop()
 
   while(1)
   {
+    if(buttonB.isPressed())
+    {
+      inverse != inverse;
+      display.clear();
+      display.gotoXY(0,0);
+      display.print("flipped");      
+      delay(1000);
+    }
     do
     {
       i = readData();
@@ -187,11 +196,23 @@ void loop()
 
     if((currentTime - lastTime) < 100)
     {
-      yaw = j;
-      velocity = i;
+      if(inverse)
+      {
+        yaw = j;
+        velocity = i;
+      } else {
+        yaw = i;
+        velocity = j;       
+      }      
     } else {
-      yaw = i;
-      velocity = j;      
+      if(inverse)
+      {
+        yaw = i;
+        velocity = j;    
+      } else {
+        yaw = j;
+        velocity = i;
+      }
     }
 
     lastTime = currentTime;    
