@@ -1,0 +1,50 @@
+roiLineBack = (0, 60, 480, 5)
+roiLineFront = (0, 15, 480, 5)
+
+
+def find_first_white_pixel_right(img, roi):
+    roi_img = img[roi[1]:roi[1]+roi[3], roi[0]:roi[0]+roi[2]]
+    white_pixels_count = cv2.countNonZero(roi_img)
+    
+    if white_pixels_count > 25:
+        for x in range(roi_img.shape[1] - 1, -1, -1):
+            if roi_img[0, x] == 255:
+                return x + roi[0]
+    return -1
+
+def find_first_white_pixel_left(img, roi):
+    roi_img = img[roi[1]:roi[1]+roi[3], roi[0]:roi[0]+roi[2]]
+    white_pixels_count = cv2.countNonZero(roi_img)
+    
+    if white_pixels_count > 25:
+        for x in range(roi_img.shape[1]):
+            if roi_img[0, x] == 255:
+                return x + roi[0]
+    return -1
+
+def getDirection(img):
+    right1 = find_first_white_pixel_right(img, roiLineFront)
+    right2 = find_first_white_pixel_right(img, roiLineBack)
+    left1 = find_first_white_pixel_left(img, roiLineFront)
+    left2 = find_first_white_pixel_left(img, roiLineBack)
+    average1 = round((left1 + right1) / 2)
+    average2 = round((left2 + right2) / 2) + 19
+    print(f"average1: {average1}, average2: {average2}" )
+
+    us_average = average2 - 240
+    if us_average < 30 and us_average > -30:
+        calc = round((us_average / 3) * -1)
+    else:
+        calc = round((us_average / 5) * -1)
+
+    if calc > 15:
+        calc = 15
+    elif calc < -20:
+        calc = -20
+
+    if calc > -4 and calc < 4:
+        calc = 0
+    
+    return  calc + 100
+
+turn = getDirection(binary_img)

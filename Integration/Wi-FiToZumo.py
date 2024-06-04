@@ -61,7 +61,7 @@ def sendToZumo(speed, turn):
 sensor.reset()
 sensor.set_framesize(sensor.HVGA)
 sensor.set_pixformat(sensor.RGB565)
-sensor.set_auto_exposure(False, exposure_us=1)
+#sensor.set_auto_exposure(False, exposure_us=1)
 sensor.ioctl(sensor.IOCTL_SET_FOV_WIDE, True)
 
 # Init wlan module and connect to network
@@ -160,6 +160,7 @@ def handle_client_command(client, data):
     else:
         response_body = "INVALID REQUEST"
         respond_with_text(client, response_body)
+        sendToZumo(0,0)
 
 def respond_with_text(client, response_body):
     # Create the HTTP response
