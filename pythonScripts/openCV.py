@@ -24,6 +24,12 @@ model = "modelfileV3.eim"
 show_camera = True
 if (sys.platform == 'linux' and not os.environ.get('DISPLAY')):
     show_camera = False
+
+# Define roi pixel amounts
+twoLinesFront = 103
+oneLineBack = 106
+twoLinesBack = 10
+
 # Define the regions of interest (ROIs)
 roiFront = (60, 60, 340, 5)
 roiBack = (100, 112, 240, 5)
@@ -32,22 +38,16 @@ leftRoiBack = (100, 112, 180, 5)
 roiLeft = (100, 60, 150, 50)
 roiRight = (240, 60, 150, 50)
 
-# Function to count white pixels in an ROI
-def count_white_pixels(img, roi, pattern_name):
-    roi_img = img[roi[1]:roi[1]+roi[3], roi[0]:roi[0]+roi[2]]
-    mean_value = cv2.mean(roi_img)[0]
-    # For manual figuring out the value
-    print(f"{pattern_name} mean ROI {roi}: {mean_value}")
-    # Threshold for enough white pixels from line
-    return mean_value >= 130
+roiBack2 = (100, 125, 240, 5)
 
-def count_white_pixelsBack(img, roi, pattern_name):
+# Function to count white pixels in an ROI
+def count_white_pixels(img, roi, pattern_name, pixels):
     roi_img = img[roi[1]:roi[1]+roi[3], roi[0]:roi[0]+roi[2]]
     mean_value = cv2.mean(roi_img)[0]
     # For manual figuring out the value
     print(f"{pattern_name} mean ROI {roi}: {mean_value}")
     # Threshold for enough white pixels from line
-    return mean_value >= 106
+    return mean_value >= pixels
 
 def countDistance(frame):
 
@@ -120,31 +120,57 @@ def send_command(command):
 
 # Functions for detecting each pattern
 def straightLine(img):
-    if count_white_pixels(img, roiFront, "Straight line") and count_white_pixels(img, roiBack, "Straight line"):
-        return True
-    return False
+    return count_white_pixels(img, roiFront, "Straight line", twoLinesFront) and count_white_pixels(img, roiBack, "Straight line", twoLinesFront)
 
 def intersection(img):
-    if count_white_pixels(img, roiFront, "Intersection") and not count_white_pixelsBack(img, roiBack, "Intersection"):
-        return True
-    return False
+    a = count_white_pixels(img, roiFront, "Intersection", twoLinesFront) and not count_white_pixels(img, roiBack, "Intersection", twoLinesBack)
+    return a and count_white_pixels(img, roiBack2, "Intersection", twoLinesBack)
+
+def t_intersection(img):
+    return count_white_pixels(img, roiFront, "t_Intersection", twoLinesFront) and not count_white_pixels(img, roiBack, "t_Intersection", twoLinesBack)
 
 def leftTurn(img):
-    if count_white_pixels(img, roiFront, "Left turn") and count_white_pixelsBack(img, leftRoiBack, "Left turn"):
-        return True
-    return False
+    return count_white_pixels(img, roiFront, "Left turn", twoLinesFront) and count_white_pixels(img, leftRoiBack, "Left turn", oneLineBack)
 
 def rightTurn(img):
-    if count_white_pixels(img, roiFront, "Right turn") and count_white_pixelsBack(img, rightRoiBack, "Right turn"):
-        return True
-    return False
+    return count_white_pixels(img, roiFront, "Right turn", twoLinesFront) and count_white_pixels(img, rightRoiBack, "Right turn", oneLineBack)
 
 def center(bin):
     countDistance(bin)
     return 0
 
+def turnRight():
+    speed = 50
+    turn = 99
+    control = speed * 200 + turn
+    command = "Integer=" + str(control)
+    send_command(command)
+    
+def turnLeft():
+    speed = 50
+    turn = -99
+    control = speed * 200 + turn
+    command = "Integer=" + str(control)
+    send_command(command)
+
 def help():
     print('python classify-image.py <path_to_model.eim>')
+
+def signNumbers(labels):
+    return {'50':"SIGN Integer=4",
+            'B01':"SIGN Integer=5",
+            'b02':"",
+            'b07':"SIGN Integer=6",
+            'c02':"",
+            'c04':"SIGN Integer=7",
+            'e01':"",
+            'e02':"",
+            'F01':"",
+            'green':"SIGN Integer=3",
+            'l08':"",
+            'orange':"SIGN Integer=2",
+            'red':"SIGN Integer=1",
+    }[labels]
 
 def imageDetection(image):
     modelfile = os.path.join(dir_path, model)
@@ -169,6 +195,10 @@ def imageDetection(image):
             features, cropped = runner.get_features_from_image(img)
 
             res = runner.classify(features)
+            #if len(res["result"]["bounding_boxes"]) >= 1:
+            #   print('Sign found!'
+            if len(res["result"]["bounding_boxes"]) >= 1:
+                print('Sign found!')
 
             if "classification" in res["result"].keys():
                 print('Result (%d ms.) ' % (res['timing']['dsp'] + res['timing']['classification']), end='')
@@ -180,6 +210,8 @@ def imageDetection(image):
             elif "bounding_boxes" in res["result"].keys():
                 print('Found %d bounding boxes (%d ms.)' % (len(res["result"]["bounding_boxes"]), res['timing']['dsp'] + res['timing']['classification']))
                 for bb in res["result"]["bounding_boxes"]:
+                    # Send string of label
+                    send_command(signNumbers(bb['label']))
                     print('\t%s (%.2f): x=%d y=%d w=%d h=%d' % (bb['label'], bb['value'], bb['x'], bb['y'], bb['width'], bb['height']))
                     cropped = cv2.rectangle(cropped, (bb['x'], bb['y']), (bb['x'] + bb['width'], bb['y'] + bb['height']), (255, 0, 0), 1)
 
@@ -200,6 +232,8 @@ def imageDetection(image):
                 print("Left turn")
             elif rightTurn(binary_img):
                  print("Right turn")
+            elif t_intersection(binary_img):
+                 print("t_Intersection")
             elif intersection(binary_img):
                  print("Intersection")
             else:
