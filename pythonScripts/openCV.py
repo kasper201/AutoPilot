@@ -8,7 +8,7 @@ import signal
 from edge_impulse_linux.image import ImageImpulseRunner
 
 # Nicla server address
-server_address = "http://192.168.90.29:8080/"
+server_address = "http://192.168.93.29:8080/"
 count = 0
 
 # Create a session object to reuse connections
@@ -81,16 +81,13 @@ def getDirection(img):
     left2 = find_first_white_pixel_left(img, roiLineBack)
     average1 = round((left1 + right1) / 2)
     average2 = round((left2 + right2) / 2) + 19
-    print(f"average1: {average1}, average2: {average2}" )
+    print(f"average2: {average2}" )
 
     us_average = average2 - 240
-    if us_average < 30 and us_average > -30:
-        calc = round((us_average / 3) * -1)
-    else:
-        calc = round((us_average / 5) * -1)
+    calc = round((us_average / 3) * -1)
 
-    if calc > 15:
-        calc = 15
+    if calc > 20:
+        calc = 20
     elif calc < -20:
         calc = -20
 
@@ -101,49 +98,7 @@ def getDirection(img):
 
 
 
-def countDistance(frame):
 
-    # Apply Canny edge detection
-    edges = cv2.Canny(frame, 50, 150)
-    
-    # Apply a region of interest mask to focus on the road
-    mask = np.zeros_like(edges)
-    cv2.fillPoly(mask, [np.array([(0, 185), (frame.shape[1], 185), (frame.shape[1], 0), (0, 0)])], 255)
-    masked_edges = cv2.bitwise_and(edges, mask)
-    
-    # Apply Hough transform to detect lines
-    lines = cv2.HoughLinesP(masked_edges, rho=1, theta=np.pi/180, threshold=50, minLineLength=30, maxLineGap=100)
-    
-    # Initialize variables to store information about the road
-    left_lane_lines = []
-    right_lane_lines = []
-    
-    # Filter lines into left and right lanes based on slope
-    if lines is not None:
-        for line in lines:
-            x1, y1, x2, y2 = line[0]
-            slope = (y2 - y1) / (x2 - x1 + 1e-6)  # Adding a small value to avoid division by zero
-            if abs(slope) < 0.5:  # Ignore lines with a slope less than 0.5 to avoid horizontal lines
-                continue
-            if slope < 0:
-                left_lane_lines.append(line)
-            elif slope > 0:
-                right_lane_lines.append(line)
-
-    # Determine the car position relative to the lanes
-    if len(left_lane_lines) > 0 and len(right_lane_lines) > 0:
-        # Calculate the midpoint of the lanes
-        left_x = int(np.mean([line[0][0] for line in left_lane_lines]))
-        right_x = int(np.mean([line[0][2] for line in right_lane_lines]))
-        road_center = (left_x + right_x) // 2
-        frame_center = frame.shape[1] // 2
-        
-        print("frame center: ", frame_center)
-        print("road center: ", road_center)
-        position 
-    else:
-        position = -128
-        print("Road Not Detected")
 
 
 
@@ -186,10 +141,6 @@ def leftTurn(img):
 
 def rightTurn(img):
     return count_white_pixels(img, roiFront, "Right turn", twoLinesFront) and count_white_pixels(img, rightRoiBack, "Right turn", oneLineBack)
-
-def center(bin):
-    countDistance(bin)
-    return 0
 
 def turnRight():
     speed = 50
@@ -278,20 +229,13 @@ def imageDetection(image):
             gray_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2GRAY)
             _, binary_img = cv2.threshold(gray_img, 101, 255, cv2.THRESH_BINARY_INV)
 
-            if straightLine(binary_img):
-                print("Straight line")
-            elif leftTurn(binary_img):
-                print("Left turn")
-            elif rightTurn(binary_img):
-                 print("Right turn")
-            elif t_intersection(binary_img):
-                 print("t_Intersection")
-            elif intersection(binary_img):
-                 print("Intersection")
-            else:
-                 print("Unknown")
-
-            center(gray_img)
+            #center(gray_img)
+            speed = 120
+            turn = getDirection(binary_img)
+            control = speed * 200 + turn
+            command = "Integer=" + str(control)
+            send_command(command)
+            time.sleep(0.2)
 
             # the image will be resized and cropped, save a copy of the picture here
             # so you can see what's being passed into the classifier
@@ -323,13 +267,7 @@ def main(argv):
 
 	# Main loop communication
     # Get user input for the command
-    
-    speed = 20
-    turn = getDirection(binary_img)
-    control = speed * 200 + turn
-    command = "Integer=" + str(control)
-    send_command(command)
-    time.sleep(0.2)
+
     #count = count + 1
     current_time = time.strftime("%H:%M:%S", time.localtime())
     print("Current time:", current_time)
