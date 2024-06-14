@@ -79,6 +79,8 @@ int drive(int velocity, int yaw)
   L = 2.5 * (deltaVelocity + deltaYaw);
   R = 2.5 * (deltaVelocity - deltaYaw);
   motors.setSpeeds(L,R);
+  
+  
   /*display.clear();
   display.gotoXY(0,0);
   display.print(velocity);
@@ -173,26 +175,34 @@ void loop()
   {
     if(buttonB.isPressed())
     {
+      buzzer.playFrequency(600, 400, 30);
       inverse != inverse;
       display.clear();
       display.gotoXY(0,0);
       display.print("flipped");      
       delay(1000);
     }
+    unsigned long currentTime = millis();
     do
     {
       i = readData();
       dt = millis();
+      if (currentTime <= millis() - 1000){
+         motors.setSpeeds(0,0);
+         display.gotoXY(0,0);
+         display.print("wait");
+        }
     }
     while(i == -128);
-
+    
     do
     {
+      motors.setSpeeds(0,0);
       j = readData();
     }
     while(j == -128);
-
-    unsigned long currentTime = millis();
+    buzzer.playFrequency(300, 140, 15 );
+    currentTime = millis();
 
     if((currentTime - lastTime) < 100)
     {
@@ -216,12 +226,13 @@ void loop()
     }
 
     lastTime = currentTime;    
-    e = drive(velocity, yaw);  
+   
     display.clear();
     display.gotoXY(0,0);
     display.print(velocity);
     display.gotoXY(0,1);
     display.print(yaw);
+    e = drive(velocity, yaw);  
   }
   //delay(1000);
 }

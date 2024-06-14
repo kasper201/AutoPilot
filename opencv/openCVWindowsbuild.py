@@ -8,7 +8,7 @@ import signal
 #from edge_impulse_linux.image import ImageImpulseRunner
 
 # Nicla server address
-server_address = "http://192.168.137.173:8080/"
+server_address = "http://192.168.43.165:8080/"
 count = 0
 
 # Create a session object to reuse connections
