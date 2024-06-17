@@ -197,12 +197,14 @@ void loop()
     
     do
     {
-      motors.setSpeeds(0,0);
+      //motors.setSpeeds(0,0);
       j = readData();
     }
     while(j == -128);
-    buzzer.playFrequency(300, 140, 15 );
+    //buzzer.playFrequency(300, 140, 15 );
     currentTime = millis();
+    /*
+    
 
     if((currentTime - lastTime) < 100)
     {
@@ -223,10 +225,22 @@ void loop()
         yaw = j;
         velocity = i;
       }
-    }
+    }*/
 
     lastTime = currentTime;    
    
+    // This should be a lot more stable XOXO Kasper
+    if(i>64)
+    {
+      velocity=i-64;
+      yaw=j;
+    }
+    else
+    {
+      velocity=j-64;
+      yaw=i;
+    }
+
     display.clear();
     display.gotoXY(0,0);
     display.print(velocity);

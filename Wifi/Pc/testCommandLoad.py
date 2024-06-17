@@ -38,8 +38,8 @@ while True:
     # Send the command
     send_command("VISION")
     
-    speed = 100
-    turn = 100
+    speed = 120
+    turn = 110
     control = speed * 200 + turn
     command = "Integer=" + str(control)
     send_command(command)

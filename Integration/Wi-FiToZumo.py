@@ -47,7 +47,7 @@ def sendToZumo(speed, turn):
     global toZumo
     toZumo.low() # set start bit
     pyb.delay(5)
-    converter(speed)
+    converter((speed + 64))
     toZumo.high()
     pyb.delay(20)
     toZumo.low() # set start bit
