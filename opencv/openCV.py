@@ -5,7 +5,7 @@ import cv2
 import os
 import sys, getopt
 import signal
-#from edge_impulse_linux.image import ImageImpulseRunner
+from edge_impulse_linux.image import ImageImpulseRunner
 
 # Nicla server address
 server_address = "http://192.168.172.29:8080/"
@@ -14,6 +14,11 @@ count = 0
 # Create a session object to reuse connections
 session = requests.Session()
 
+# Edge Impulse specifics
+runner = None
+dir_path = os.path.dirname(os.path.realpath(__file__))
+modelfile = "modelfileV3.eim" 
+model = "modelfileV3.eim"
 
 # if you don't want to see a camera preview, set this to False
 show_camera = True
@@ -175,48 +180,97 @@ def signNumbers(labels):
     }[labels]
 
 def imageDetection(image):
-	img = image
-	if img is None:
-		print('Failed to load image', args[1])
-		exit(1)
+    modelfile = os.path.join(dir_path, model)
+    img = image
+    if img is None:
+        print('Failed to load image', args[1])
+        exit(1)
 
-	# imread returns images in BGR format, so we need to convert to RGB
-	img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-	#Prevent image from being cropped by adding a border below it
-	img = cv2.copyMakeBorder(img, 0, 160, 0, 0, cv2.BORDER_CONSTANT, value=[0, 0, 0])
+    with ImageImpulseRunner(modelfile) as runner:
+        try:
+            model_info = runner.init()
+            print('Loaded runner for "' + model_info['project']['owner'] + ' / ' + model_info['project']['name'] + '"')
+            labels = model_info['model_parameters']['labels']
 
-	
-	cropped_img = img[:160, :]
-	gray_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2GRAY)
-	_, binary_img = cv2.threshold(gray_img, 101, 255, cv2.THRESH_BINARY_INV)
+            img = image
+            if img is None:
+                print('Failed to load image', args[1])
+                exit(1)
+
+            # imread returns images in BGR format, so we need to convert to RGB
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            
+            #Prevent image from being cropped by adding a border below it
+            img = cv2.copyMakeBorder(img, 0, 160, 0, 0, cv2.BORDER_CONSTANT, value=[0, 0, 0])
+
+            # get_features_from_image also takes a crop direction arguments in case you don't have square images
+            features, cropped = runner.get_features_from_image(img)
+
+            res = runner.classify(features)
+            if len(res["result"]["bounding_boxes"]) >= 1:
+                print('Sign found!')
+
+            if "classification" in res["result"].keys():
+                print('Result (%d ms.) ' % (res['timing']['dsp'] + res['timing']['classification']), end='')
+                for label in labels:
+                    score = res['result']['classification'][label]
+                    print('%s: %.2f\t' % (label, score), end='')
+                print('', flush=True)
+
+            elif "bounding_boxes" in res["result"].keys():
+                print('Found %d bounding boxes (%d ms.)' % (len(res["result"]["bounding_boxes"]), res['timing']['dsp'] + res['timing']['classification']))
+                for bb in res["result"]["bounding_boxes"]:
+                    # Send string of label
+                    send_command(signNumbers(bb['label']))
+                    print('\t%s (%.2f): x=%d y=%d w=%d h=%d' % (bb['label'], bb['value'], bb['x'], bb['y'], bb['width'], bb['height']))
+                    cropped = cv2.rectangle(cropped, (bb['x'], bb['y']), (bb['x'] + bb['width'], bb['y'] + bb['height']), (255, 0, 0), 1)
+
+            if "visual_anomaly_grid" in res["result"].keys():
+                print('Found %d visual anomalies (%d ms.)' % (len(res["result"]["visual_anomaly_grid"]), res['timing']['dsp'] + res['timing']['classification']))
+                for grid_cell in res["result"]["visual_anomaly_grid"]:
+                    print('\t%s (%.2f): x=%d y=%d w=%d h=%d' % (grid_cell['label'], grid_cell['value'], grid_cell['x'], grid_cell['y'], grid_cell['width'], grid_cell['height']))
+                    cropped = cv2.rectangle(cropped, (grid_cell['x'], grid_cell['y']), (grid_cell['x'] + grid_cell['width'], grid_cell['y'] + grid_cell['height']), (255, 125, 0), 1)
+            # Line detection
+        finally:
+            if (runner):
+                runner.stop()
+
+    # imread returns images in BGR format, so we need to convert to RGB
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    #Prevent image from being cropped by adding a border below it
+    img = cv2.copyMakeBorder(img, 0, 160, 0, 0, cv2.BORDER_CONSTANT, value=[0, 0, 0])
+
+    
+    cropped_img = img[:160, :]
+    gray_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2GRAY)
+    _, binary_img = cv2.threshold(gray_img, 101, 255, cv2.THRESH_BINARY_INV)
 
         #center(gray_img)
-	speed = 120
-	road_type = detect_road_type(img)
-	if (road_type ==  "Unknown"):
-		turn = getDirection(binary_img)
-	elif (road_type == "Straight line"):
-		turn = getDirection(binary_img)
-	elif (road_type == "Left turn"):
-		turn = getDirection(binary_img)
-	elif (road_type == "Right turn"):
-		turn = getDirection(binary_img)
-	elif (road_type == "t_Intersection"):
-		turn = getDirection(binary_img)
-	elif (road_type == "Intersection"):
-		turn = getDirection(binary_img)
-	else:
-		speed = 0
-		print("WHWUH ERROR NOT A KNOWN ROAD TYPE")
+    speed = 120
+    road_type = detect_road_type(img)
+    if (road_type ==  "Unknown"):
+        turn = getDirection(binary_img)
+    elif (road_type == "Straight line"):
+        turn = getDirection(binary_img)
+    elif (road_type == "Left turn"):
+        turn = getDirection(binary_img)
+    elif (road_type == "Right turn"):
+        turn = getDirection(binary_img)
+    elif (road_type == "t_Intersection"):
+        turn = getDirection(binary_img)
+    elif (road_type == "Intersection"):
+        turn = getDirection(binary_img)
+    else:
+        speed = 0
+        print("WHWUH ERROR NOT A KNOWN ROAD TYPE")
         
-	control = speed * 200 + turn
-	command = "Integer=" + str(control)
-	send_command(command)
-	time.sleep(0.2)
-	# the image will be resized and cropped, save a copy of the picture here
-	# so you can see what's being passed into the classifier
-	#cv2.imwrite('debug.jpg', cv2.cvtColor(cropped_w, cv2.COLOR_RGB2BGR))
-
+    control = speed * 200 + turn
+    command = "Integer=" + str(control)
+    send_command(command)
+    time.sleep(0.2)
+    # the image will be resized and cropped, save a copy of the picture here
+    # so you can see what's being passed into the classifier
+    #cv2.imwrite('debug.jpg', cv2.cvtColor(cropped_w, cv2.COLOR_RGB2BGR))
 
 def detect_road_type(img):
     #img = cv2.imread(image_path)
@@ -264,7 +318,7 @@ def main(argv):
 
     #model = args[0]
 
-	# Main loop communication
+    # Main loop communication
     # Get user input for the command
 
     #count = count + 1
@@ -283,4 +337,4 @@ def main(argv):
 
 
 if __name__ == "__main__":#
-	main(sys.argv[1:])
+    main(sys.argv[1:])
