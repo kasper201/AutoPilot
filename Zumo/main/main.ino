@@ -187,7 +187,7 @@ void loop()
     {
       i = readData();
       dt = millis();
-      if (currentTime <= millis() - 1000){
+      if (currentTime <= millis() - 750){
          motors.setSpeeds(0,0);
          display.gotoXY(0,0);
          display.print("wait");
